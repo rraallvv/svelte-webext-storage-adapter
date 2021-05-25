@@ -1,6 +1,7 @@
 import { writable } from "svelte/store";
 import { tick } from "svelte";
 import nullKeysStores from "./nullKeysStores.mjs";
+import browser from 'webextension-polyfill';
 
 /**
  * Returned by webextStorageAdapter. Provides stores, plus properties that concern all of them.
@@ -16,14 +17,14 @@ import nullKeysStores from "./nullKeysStores.mjs";
  */
 
 /**
- * Create Svelte stores based on data from `chrome.storage`.
+ * Create Svelte stores based on data from `browser.storage`.
  * {@link https://github.com/PixievoltNo1/svelte-webext-storage-adapter#default-export-webextstorageadapter Read more...}
  * @param {string|string[]|!Object<string,*>|null} keys Keys from extension storage to use, or
  * `null` to use the entire area.
  * {@link https://github.com/PixievoltNo1/svelte-webext-storage-adapter#parameter-keys Read more...}
  * @param {Object} [options] Additional parameters.
  * {@link https://github.com/PixievoltNo1/svelte-webext-storage-adapter#parameter-options Read more...}
- * @param {!Object} [options.storageArea=chrome.storage.sync] The StorageArea where store values
+ * @param {!Object} [options.storageArea=browser.storage.sync] The StorageArea where store values
  * will be read from & written to.
  * {@link https://github.com/PixievoltNo1/svelte-webext-storage-adapter#storagearea Read more...}
  * @param {boolean} [options.live=true] Whether the stores will be updated in response to changes in
@@ -38,7 +39,7 @@ import nullKeysStores from "./nullKeysStores.mjs";
  */
 export default function webextStorageAdapter(keys, options = {}) {
 	var {
-		storageArea = chrome.storage.sync,
+		storageArea = browser.storage.sync,
 		live = true,
 		onSetError = (error, setItems) => {
 			console.error("error: ", error, "\n", "setItems: ", setItems);
@@ -79,7 +80,7 @@ export default function webextStorageAdapter(keys, options = {}) {
 		if (!setItems) {
 			setItems = Object.create(null);
 			tick().then( () => {
-				storageArea.set(setItems, (error = chrome.runtime.lastError) => {
+				storageArea.set(setItems).then((error = browser.runtime.lastError) => {
 					if (error) { onSetError(error, setItems); }
 				});
 				setItems = null;
@@ -89,7 +90,7 @@ export default function webextStorageAdapter(keys, options = {}) {
 	}
 	
 	var get = new Promise( (resolve, reject) => {
-		storageArea.get(keys, (results, error = chrome.runtime.lastError) => {
+		storageArea.get(keys).then((results, error = browser.runtime.lastError) => {
 			if (error) {
 				reject(error);
 			} else {
@@ -109,10 +110,10 @@ export default function webextStorageAdapter(keys, options = {}) {
 		if (storageArea.onChanged) {
 			eventSource = storageArea.onChanged;
 		} else {
-			for (let name of Object.keys(chrome.storage)) {
-				if (chrome.storage[name] == storageArea) {
+			for (let name of ['local', 'sync']) {
+				if (browser.storage[name] == storageArea) {
 					specifiedArea = name;
-					eventSource = chrome.storage.onChanged;
+					eventSource = browser.storage.onChanged;
 					break;
 				}
 			}

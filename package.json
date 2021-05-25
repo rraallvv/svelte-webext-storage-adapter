@@ -41,5 +41,8 @@
 		"mocha": "^7.2.0",
 		"svelte": "^3.24.0"
 	},
-	"license": "MIT"
+	"license": "MIT",
+	"dependencies": {
+		"webextension-polyfill": "^0.8.0"
+	}
 }
